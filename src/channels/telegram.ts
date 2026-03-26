@@ -1,5 +1,6 @@
 import https from 'https';
 import { Api, Bot } from 'grammy';
+import { HttpsProxyAgent } from 'https-proxy-agent';
 
 import { ASSISTANT_NAME, TRIGGER_PATTERN } from '../config.js';
 import { readEnvFile } from '../env.js';
@@ -54,11 +55,24 @@ export class TelegramChannel implements Channel {
   }
 
   async connect(): Promise<void> {
-    this.bot = new Bot(this.botToken, {
-      client: {
-        baseFetchConfig: { agent: https.globalAgent, compress: true },
-      },
-    });
+    const proxyUrl =
+      process.env.HTTPS_PROXY ||
+      process.env.https_proxy ||
+      process.env.HTTP_PROXY ||
+      process.env.http_proxy;
+
+    const botOptions = proxyUrl
+      ? {
+          client: {
+            baseFetchConfig: {
+              agent: new HttpsProxyAgent(proxyUrl),
+              compress: true,
+            },
+          },
+        }
+      : {};
+
+    this.bot = new Bot(this.botToken, botOptions);
 
     // Command to get chat ID (useful for registration)
     this.bot.command('chatid', (ctx) => {
@@ -221,22 +235,20 @@ export class TelegramChannel implements Channel {
       logger.error({ err: err.message }, 'Telegram bot error');
     });
 
-    // Start polling — returns a Promise that resolves when started
-    return new Promise<void>((resolve) => {
-      this.bot!.start({
-        onStart: (botInfo) => {
-          logger.info(
-            { username: botInfo.username, id: botInfo.id },
-            'Telegram bot connected',
-          );
-          console.log(`\n  Telegram bot: @${botInfo.username}`);
-          console.log(
-            `  Send /chatid to the bot to get a chat's registration ID\n`,
-          );
-          resolve();
-        },
-      });
-    });
+    // Initialize bot (calls getMe) then start polling
+    logger.info('Calling bot.init()...');
+    await this.bot.init();
+    const botInfo = this.bot.botInfo;
+    logger.info(
+      { username: botInfo.username, id: botInfo.id },
+      'Telegram bot connected',
+    );
+    console.log(`\n  Telegram bot: @${botInfo.username}`);
+    console.log(
+      `  Send /chatid to the bot to get a chat's registration ID\n`,
+    );
+    // Start polling in background (don't await — it runs forever)
+    this.bot.start();
   }
 
   async sendMessage(
