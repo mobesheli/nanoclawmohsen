@@ -531,7 +531,6 @@ async function main(): Promise<void> {
   }
 
   restoreRemoteControl();
-  logger.info('Remote control restored');
 
   // Graceful shutdown handlers
   const shutdown = async (signal: string) => {
@@ -625,7 +624,6 @@ async function main(): Promise<void> {
     registeredGroups: () => registeredGroups,
   };
 
-  logger.info('About to create and connect channels');
   // Create and connect all registered channels.
   // Each channel self-registers via the barrel import above.
   // Factories return null when credentials are missing, so unconfigured channels are skipped.
@@ -640,9 +638,7 @@ async function main(): Promise<void> {
       continue;
     }
     channels.push(channel);
-    logger.info({ channel: channelName }, 'Connecting channel...');
     await channel.connect();
-    logger.info({ channel: channelName }, 'Channel connected');
   }
   if (channels.length === 0) {
     logger.fatal('No channels connected');

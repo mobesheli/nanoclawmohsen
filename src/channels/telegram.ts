@@ -236,7 +236,6 @@ export class TelegramChannel implements Channel {
     });
 
     // Initialize bot (calls getMe) then start polling
-    logger.info('Calling bot.init()...');
     await this.bot.init();
     const botInfo = this.bot.botInfo;
     logger.info(
