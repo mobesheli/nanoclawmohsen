@@ -244,9 +244,7 @@ export class TelegramChannel implements Channel {
       'Telegram bot connected',
     );
     console.log(`\n  Telegram bot: @${botInfo.username}`);
-    console.log(
-      `  Send /chatid to the bot to get a chat's registration ID\n`,
-    );
+    console.log(`  Send /chatid to the bot to get a chat's registration ID\n`);
     // Start polling in background (don't await — it runs forever)
     this.bot.start();
   }
